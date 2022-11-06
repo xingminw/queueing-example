@@ -6,6 +6,7 @@ how that will influence the stationary distribution
 """
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
 
 
 class SingleQueue:
@@ -79,6 +80,7 @@ def main():
     # upstream_departure_probability_list = [0.1, 0.2, 0.3, 0.9, 0.9, 0.9, 0.8, 0.6]
     upstream_departure_probability_list = [0, 0, 0, 1, 1, 1, 1, 1]
     downstream_departure_probability_list = [0.9, 0.9, 0.9, 0.8, 0.6, 0.1, 0.2, 0.3]
+    report_last_timesteps = 100
 
     total_arrival = np.sum(upstream_arrival_probability_list)
     total_departure = np.sum(upstream_departure_probability_list)
@@ -93,10 +95,13 @@ def main():
     joint_queue = JointQueue(max_length=30)
     independent_q_list = None
     dependent_q_list = None
+    include_if_list = range(simulation_steps-report_last_timesteps, simulation_steps)
+    independent_list = []
+    dependent_list = []
     for i_t in range(simulation_steps):
         _t = i_t % len(upstream_arrival_probability_list)
         if _t == 0:
-            print("========================================")
+            # print("========================================")
             pass
         arrival_prob = upstream_arrival_probability_list[_t]
         upstream_departure_prob = upstream_departure_probability_list[_t]
@@ -122,19 +127,28 @@ def main():
         diff = np.array(downstream_queue.pmf_list) - departure_marginal_dis
         diff_metric = np.sum(np.abs(diff))
         # print("Difference", diff)
-        print("Diff metric", diff_metric)
+        # print("Diff metric", diff_metric)
         # exit()
         independent_q_list = downstream_queue.pmf_list
         dependent_q_list = departure_marginal_dis
+        if i_t in include_if_list:
+            independent_list.append(independent_q_list)
+            dependent_list.append(dependent_q_list)
 
     plt.figure()
-    plt.plot(independent_q_list[:10], label='approximated')
-    plt.plot(dependent_q_list[:10], label='rigorous')
+    independent_list = np.array(independent_list)
+    independent_list = np.mean(independent_list, axis=0)
+    dependent_list = np.array(dependent_list)
+    dependent_list = np.mean(dependent_list, axis=0)
+    plt.plot(independent_list[:10], label='approximated')
+    plt.plot(dependent_list[:10], label='rigorous')
     plt.grid()
     plt.xlabel("Number of vehicles")
     plt.ylabel("Probability")
     plt.legend()
     plt.show()
+    with open('C:/Users/tawit/Documents/GitHub/tqueue/pickle files/queuing-example-results.pkl', 'wb') as f:
+        pickle.dump([independent_list[:10], dependent_list[:10]], f)
 
 
 if __name__ == '__main__':
